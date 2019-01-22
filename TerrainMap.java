@@ -266,7 +266,7 @@ public final class TerrainMap
                     neighbors.add(temp);
             }
         }
-        return neighbors.to:qArray(new Point[0]);
+        return neighbors.toArray(new Point[0]);
     }
 
     /// Returns the cost to move from one point to another.
