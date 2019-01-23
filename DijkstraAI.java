@@ -61,18 +61,6 @@ public class DijkstraAI implements AIModule {
             path.add(new Point(currentPoint));
         }
 
-        /*
-        // Keep moving vertically until we match the target.
-        while(map.getEndPoint().y != CurrentPoint.y)
-        {
-            if(map.getEndPoint().y > CurrentPoint.y)
-                ++CurrentPoint.y;
-            else
-                --CurrentPoint.y;
-            path.add(new Point(CurrentPoint));
-        }
-        */
-
         // We're done!  Hand it back.
         return path;
     }
