@@ -25,7 +25,7 @@ public class DijkstraAI implements AIModule {
         HashMap<Point, Boolean> closed = new HashMap<Point, Boolean>();
         open.put(currentPoint, 0.0);
         Boolean pathVisited = new Boolean(false);
-        while ((map.getEndPoint().x != currentPoint.x) && (map.getEndPoint().y != currentPoint.y)) {
+        while ((map.getEndPoint().x != currentPoint.x) || (map.getEndPoint().y != currentPoint.y)) {
             // verify if current point has been visited or not.
             // If so, take node from open list.
             if (open.isEmpty()) {
