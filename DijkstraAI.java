@@ -31,7 +31,7 @@ public class DijkstraAI implements AIModule
             Point minNeighbor = new Point();
             Double minCost = Double.MAX_VALUE;
             for (Point neighbor : neighbors) {
-                if (closed.get(neighbor)) {
+                if (closed.get(neighbor) != null) {
                     continue;
                 }
                 Double tempCost = map.getCost(currentPoint, neighbor);
