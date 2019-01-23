@@ -2,6 +2,7 @@
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
 
 /// A sample AI that takes a very suboptimal path.
 /**
@@ -22,13 +23,17 @@ public class DijkstraAI implements AIModule
         // Keep track of where we are and add the start point.
         Point currentPoint = map.getStartPoint();
         path.add(new Point(currentPoint));
-
+        HashMap<Point,Boolean> closed = new HashMap<Point,Boolean>();
+        Boolean pathVisited = new Boolean(false);
         while((map.getEndPoint().x != currentPoint.x) && (map.getEndPoint().y != currentPoint.y))
         {
             Point[] neighbors = map.getNeighbors(currentPoint);
-            Point minNeighbor = currentPoint;
+            Point minNeighbor = new Point();
             Double minCost = Double.MAX_VALUE;
             for (Point neighbor : neighbors) {
+                if (closed.get(neighbor)) {
+                    continue;
+                }
                 Double tempCost = map.getCost(currentPoint, neighbor);
                 if (tempCost < minCost) {
                     minCost = tempCost;
@@ -36,6 +41,7 @@ public class DijkstraAI implements AIModule
                 }
             }
             currentPoint = minNeighbor;
+            closed.put(new Point(currentPoint), true);
             path.add(new Point(currentPoint));
         }
 
