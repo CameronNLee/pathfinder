@@ -1,6 +1,6 @@
-
 import java.awt.Point;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.HashMap;
 
@@ -12,21 +12,35 @@ import java.util.HashMap;
  * 
  * @author Scott Madera
  */
-public class DijkstraAI implements AIModule
-{
+public class DijkstraAI implements AIModule {
     /// Creates the path to the goal.
-    public List<Point> createPath(final TerrainMap map)
-    {
+    public List<Point> createPath(final TerrainMap map) {
         // Holds the resulting path
         final ArrayList<Point> path = new ArrayList<Point>();
 
         // Keep track of where we are and add the start point.
         Point currentPoint = map.getStartPoint();
         path.add(new Point(currentPoint));
-        HashMap<Point,Boolean> closed = new HashMap<Point,Boolean>();
+        HashMap<Point, Double> open = new HashMap<>();
+        HashMap<Point, Boolean> closed = new HashMap<Point, Boolean>();
+        open.put(currentPoint, 0.0);
         Boolean pathVisited = new Boolean(false);
-        while((map.getEndPoint().x != currentPoint.x) && (map.getEndPoint().y != currentPoint.y))
-        {
+        while ((map.getEndPoint().x != currentPoint.x) && (map.getEndPoint().y != currentPoint.y)) {
+            // verify if current point has been visited or not.
+            // If so, take node from open list.
+            if (open.isEmpty()) {
+                throw new RuntimeException("Reached empty open list");
+            }
+            // set current point as the point associated
+            // with the least cost in the frontier set
+            currentPoint = extractMinPoint(open);
+
+            // choose a different Point to search towards
+            // if current node is already "explored"
+            if (closed.containsKey(currentPoint)) {
+                continue;
+            }
+
             Point[] neighbors = map.getNeighbors(currentPoint);
             Point minNeighbor = new Point();
             Double minCost = Double.MAX_VALUE;
@@ -35,13 +49,15 @@ public class DijkstraAI implements AIModule
                     continue;
                 }
                 Double tempCost = map.getCost(currentPoint, neighbor);
+                open.put(neighbor, tempCost); // adding neighbors to frontier
                 if (tempCost < minCost) {
                     minCost = tempCost;
                     minNeighbor = neighbor;
                 }
             }
-            currentPoint = minNeighbor;
+
             closed.put(new Point(currentPoint), true);
+            currentPoint = minNeighbor;
             path.add(new Point(currentPoint));
         }
 
@@ -59,5 +75,19 @@ public class DijkstraAI implements AIModule
 
         // We're done!  Hand it back.
         return path;
+    }
+
+    // find and return the Point associated with
+    // the minimum cost in the frontier set.
+    private Point extractMinPoint(HashMap<Point, Double> open) {
+        Double minCost = Collections.min(open.values());
+        for (Point key : open.keySet()) {
+            if (open.get(key).equals(minCost)) {
+                // extraction portion
+                open.remove(key, minCost);
+                return key;
+            }
+        }
+        throw new RuntimeException("getMinPoint: no matching key.");
     }
 }
