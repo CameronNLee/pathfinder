@@ -20,9 +20,10 @@ public class DijkstraAI implements AIModule {
 
         // Keep track of where we are and add the start point.
         Point currentPoint = map.getStartPoint();
-        path.add(new Point(currentPoint));
+        // path.add(new Point(currentPoint));
         HashMap<Point, Double> open = new HashMap<>();
         HashMap<Point, Boolean> closed = new HashMap<Point, Boolean>();
+        HashMap<Point, Point> paths = new HashMap<>();
         open.put(currentPoint, 0.0);
         Boolean pathVisited = new Boolean(false);
         while ((map.getEndPoint().x != currentPoint.x) || (map.getEndPoint().y != currentPoint.y)) {
@@ -57,9 +58,21 @@ public class DijkstraAI implements AIModule {
             }
 
             closed.put(new Point(currentPoint), true);
-            currentPoint = minNeighbor;
-            path.add(new Point(currentPoint));
+            paths.put(minNeighbor, currentPoint);
+
+            // apparently leaving this uncommented causes
+            // the algorithm to search through all tiles
+            // but somehow doesn't exit the while condition
+            // currentPoint = minNeighbor;
+
+            // path.add(new Point(currentPoint));
         }
+
+        while ((map.getStartPoint().x != currentPoint.x) || (map.getStartPoint().y != currentPoint.y)) {
+            path.add(paths.get(currentPoint));
+            currentPoint = paths.get(currentPoint);
+        }
+        Collections.reverse(path);
 
         // We're done!  Hand it back.
         return path;
