@@ -21,9 +21,9 @@ public class DijkstraAI implements AIModule {
         // Keep track of where we are and add the start point.
         Point currentPoint = map.getStartPoint();
         // path.add(new Point(currentPoint));
-        HashMap<Point, Double> open = new HashMap<>();
+        HashMap<Point, Double> open = new HashMap<Point,Double>();
         HashMap<Point, Boolean> closed = new HashMap<Point, Boolean>();
-        HashMap<Point, Point> paths = new HashMap<>();
+        HashMap<Point, Point> paths = new HashMap<Point,Point>();
         open.put(currentPoint, 0.0);
         Boolean pathVisited = new Boolean(false);
         while ((map.getEndPoint().x != currentPoint.x) || (map.getEndPoint().y != currentPoint.y)) {
@@ -35,12 +35,6 @@ public class DijkstraAI implements AIModule {
             // set current point as the point associated
             // with the least cost in the frontier set
             currentPoint = extractMinPoint(open);
-
-            // choose a different Point to search towards
-            // if current node is already "explored"
-            if (closed.containsKey(currentPoint)) {
-                continue;
-            }
 
             Point[] neighbors = map.getNeighbors(currentPoint);
             Point minNeighbor = new Point();
@@ -58,19 +52,16 @@ public class DijkstraAI implements AIModule {
             }
 
             closed.put(new Point(currentPoint), true);
-            paths.put(minNeighbor, currentPoint);
-
-            // apparently leaving this uncommented causes
-            // the algorithm to search through all tiles
-            // but somehow doesn't exit the while condition
-            // currentPoint = minNeighbor;
-
-            // path.add(new Point(currentPoint));
+            paths.put(new Point(minNeighbor), new Point(currentPoint));
         }
 
+        // we're doing a bit of extra work here.
+        // reverse is an O(n^2) operation, while if we just added each new Point to the beginning
+        // of a list, we would accomplish the same result in only O(n) time
         while ((map.getStartPoint().x != currentPoint.x) || (map.getStartPoint().y != currentPoint.y)) {
             path.add(paths.get(currentPoint));
             currentPoint = paths.get(currentPoint);
+            System.out.println(currentPoint);
         }
         Collections.reverse(path);
 
@@ -85,7 +76,7 @@ public class DijkstraAI implements AIModule {
         for (Point key : open.keySet()) {
             if (open.get(key).equals(minCost)) {
                 // extraction portion
-                open.remove(key, minCost);
+                open.remove(key);
                 return key;
             }
         }
