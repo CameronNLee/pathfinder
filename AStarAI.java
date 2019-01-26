@@ -110,9 +110,26 @@ public class AStarAI implements AIModule {
                     paths.put(neighbor, currentPoint);
                     open.add(new MapNode(neighbor, minCost)); // adding neighbors to frontier; O(log n)
                 }
-            }
+            } // end of neighbors loop
             closed.put(currentPoint, true);
-        }
+
+            // we update HeuristicNode height and count here
+            // as we travel along the path.
+            // Note: somehow adding the below if-else
+            // INCREASED the costs very slightly AND nodes uncovered by 4000...
+            // try commenting and uncommenting it out to compare
+            if (useBizarro) { // update hNode members based on Bizarro scheme
+                hNode.height = Math.floor(hNode.height / 2);
+            }
+            else { // update hNode members based on Exponent scheme
+                if (hNode.height - hNode.count >= 0) {
+                    hNode.height = hNode.height - hNode.count;
+                } else {
+                    hNode.height = 0; // exhausted height, cannot go below height = 0 (range is 0 to 255)
+                }
+                ++hNode.count;
+            }
+        } // end of Dijkstra while loop
 
         // we're doing a bit of extra work here.
         // reverse is an O(n^2) operation, while if we just added each new Point to the beginning
