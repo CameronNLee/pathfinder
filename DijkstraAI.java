@@ -9,7 +9,9 @@ import java.util.PriorityQueue;
  * This is a sample AI that moves as far horizontally as necessary to reach the target,
  * then as far vertically as necessary to reach the target.  It is intended primarily as
  * a demonstration of the various pieces of the program.
- *
+ * 
+ * @author Cameron Lee
+ * @author Marshall Fan
  * @author Scott Madera
  */
 public class DijkstraAI implements AIModule {
@@ -27,8 +29,8 @@ public class DijkstraAI implements AIModule {
          * the StartPoint. A MapNode is a pair <Point, Double>,
          * with the Double value representing the accumulated
          * cost from StartPoint to the Point. */
-        PriorityQueue<MapNode> open = new PriorityQueue<>();
-        HashMap<Point, Boolean> closed = new HashMap<>();
+        PriorityQueue<MapNode> open = new PriorityQueue<MapNode>();
+        HashMap<Point, Boolean> closed = new HashMap<Point, Boolean>();
 
         /* distances will also hold the accumulated costs
          * from start point to the passed-in point much like open does,
@@ -41,8 +43,8 @@ public class DijkstraAI implements AIModule {
          * and has a non-null value associated with it,
          * then that key is inside the frontier. This will
          * be useful for later cost relaxation purposes. */
-        HashMap<Point, Double> distances = new HashMap<>();
-        HashMap<Point, Point> paths = new HashMap<>(); // format: <current, prev>
+        HashMap<Point, Double> distances = new HashMap<Point, Double>();
+        HashMap<Point, Point> paths = new HashMap<Point, Point>(); // format: <current, prev>
 
         // initialize collections to ensure loop correctness
         open.add(new MapNode(currentPoint, 0.0));
@@ -111,12 +113,10 @@ public class DijkstraAI implements AIModule {
         // Are you sure? I looked up the Collections.sort() documentation,
         // and a lot of sources ended up saying it was O(n) anyway, not O(n^2).
         while ((map.getStartPoint().x != currentPoint.x) || (map.getStartPoint().y != currentPoint.y)) {
-            path.add(currentPoint);
+            path.add(0, currentPoint);
             currentPoint = paths.get(currentPoint);
-            // System.out.println(currentPoint);
         }
-        path.add(currentPoint); // don't forget the StartPoint!
-        Collections.reverse(path);
+        path.add(0, currentPoint); // don't forget the StartPoint!
 
         // We're done!  Hand it back.
         return path;
