@@ -1,6 +1,5 @@
 import java.awt.Point;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.HashMap;
 import java.util.PriorityQueue;
@@ -14,7 +13,7 @@ import java.util.PriorityQueue;
  * @author Marshall Fan
  * @author Scott Madera
  */
-public class DijkstraAI implements AIModule {
+public class AStarAI implements AIModule {
     /// Creates the path to the goal.
     public List<Point> createPath(final TerrainMap map) {
         // Holds the resulting path
@@ -50,8 +49,15 @@ public class DijkstraAI implements AIModule {
         open.add(new MapNode(currentPoint, 0.0));
         distances.put(currentPoint, 0.0);
         closed.put(currentPoint, true);
-
         // Boolean pathVisited = new Boolean(false);
+
+        // debug to switch between Bizarro and Exp easily; remove in future
+        // useBizarro: if false, use exponential cost. if true, use bizarro cost.
+        // Obviously must still comment and uncomment whatever cost function
+        // we want to use inside TerrainMap.java.
+        boolean useBizarro = true;
+        HeuristicNode hNode = new HeuristicNode(255.0);
+
         while (!open.isEmpty()) {
             // set current point as the point associated
             // with the least cost in the frontier set
@@ -98,6 +104,8 @@ public class DijkstraAI implements AIModule {
                         distances.remove(neighbor); // O(1)?
                         open.remove(neighborInFrontier); // O(n)
                     }
+                    // f(n) + g(n) + h(n)
+                    minCost += heuristicCost(neighbor, map.getEndPoint(), hNode, useBizarro);
                     distances.put(neighbor, minCost);
                     paths.put(neighbor, currentPoint);
                     open.add(new MapNode(neighbor, minCost)); // adding neighbors to frontier; O(log n)
@@ -120,22 +128,123 @@ public class DijkstraAI implements AIModule {
 
         // We're done!  Hand it back.
         return path;
+    } // end of createPath()
+
+
+    public double heuristicCost(Point currentPoint, Point endpoint, HeuristicNode hNode, boolean useBizarro) {
+        // First: compute min. # of moves from currentPoint to End,
+        // assuming that height costs are ignored.
+        int minNumOfMoves = getMinNumOfMoves(currentPoint, endpoint);
+
+        // Check the case where there is no longer
+        // any downwards movement. If so, then treat
+        // the remaining path to goal as a flat path,
+        // with each move costing (2^0 = 1) per tile.
+        if (hNode.height == 0) {
+            return (double)minNumOfMoves;
+        }
+
+        // Next, calculate underestimated cost distance
+        // from currentPoint to EndPoint, based on assumed
+        // best-case height differences (2^some negative #)
+        if (useBizarro) {
+            return getDistanceToEndBizarro(minNumOfMoves, hNode);
+        } else {
+            return getDistanceToEndExp(minNumOfMoves, hNode);
+        }
     }
 
-    // find and return the Point associated with
-    // the minimum cost in the frontier set.
-    private Point extractMinPoint(HashMap<Point, Double> open) {
-        Double minCost = Collections.min(open.values());
-        for (Point key : open.keySet()) {
-            if (open.get(key).equals(minCost)) {
-                // extraction portion
-                open.remove(key);
-                return key;
+    private int getMinNumOfMoves(Point start, Point end) {
+        int xStart = start.x;
+        int xEnd = end.x;
+        int yStart = start.y;
+        int yEnd = end.y;
+
+        int numOfMoves;
+
+        // case 1: (250,250) to (100,250)
+        if ( (xStart == xEnd) || (yStart == yEnd) ) {
+            if (xStart != xEnd) {
+                numOfMoves = Math.abs(xEnd - xStart);
+            }
+            else { // yStart != yEnd
+                numOfMoves = Math.abs(yEnd - yStart);
             }
         }
-        throw new RuntimeException("getMinPoint: no matching key.");
+        // case 2: (250,250) to (450,450), perfect diagonal line
+        else if ( (xStart == yStart) && (xEnd == yEnd) ) {
+            numOfMoves = xEnd - xStart;
+        }
+        // case3: (250,200) to (400,450)
+        else {
+            int xDiff = Math.abs(xEnd - xStart);
+            int yDiff = Math.abs(yEnd - yStart);
+            int numOfDiagonalMoves = Math.min(xDiff, yDiff);
+            int remainingMoves;
+            if (xDiff > yDiff) {
+                remainingMoves = xDiff - numOfDiagonalMoves;
+            }
+            else {
+                remainingMoves = yDiff - numOfDiagonalMoves;
+            }
+            numOfMoves = numOfDiagonalMoves + remainingMoves;
+        }
+        return numOfMoves;
     }
-}
+
+    /**
+     * Attempts to calculate an underestimate cost
+     * from the given point to the EndPoint. Uses a
+     * monotonically-decreasing scheme where costs are
+     * accumulated until number of moves away from the goal
+     * is zero, or if no more negative exponents can be produced.
+     * Formula used:
+     * summation(2^k) + number of remaining moves
+     * where k is an increasing negative number.
+     */
+    public double getDistanceToEndExp(int minNumOfMoves, HeuristicNode hNode) {
+        double sumCost = 0.0;
+        double prevHeight = hNode.height;
+        // we want a local copy of hNode.count. In the main dijkstra while loop
+        // is when the actual value of hNode.count will be incremented.
+        int count = hNode.count;
+        double i = count;
+        while (minNumOfMoves != 0) {
+            if (prevHeight - i < 0) { // out of height; cannot go beyond 0
+                sumCost += Math.pow(2.0, 0.0 - prevHeight); // "flatten" the remainder
+                --minNumOfMoves; // "flattening" expended a step.
+                sumCost += minNumOfMoves; // tally up remaining move costs (2^0 per move)
+                break;
+            }
+            double tempCost = Math.pow(2.0, (prevHeight - i) - prevHeight);
+            sumCost += tempCost;
+            prevHeight = (prevHeight - i);
+            ++count;
+            i = count;
+            --minNumOfMoves;
+        }
+        return sumCost;
+    }
+
+    public double getDistanceToEndBizarro(int minNumOfMoves, HeuristicNode hNode) {
+        double sumCost = 0.0;
+        double prevHeight = hNode.height;
+        double half = hNode.height;
+        while (minNumOfMoves != 0) {
+            if (half == 0) {
+                sumCost += minNumOfMoves; // tally up remaining move costs (2^0 per move)
+                break;
+            }
+            half = Math.floor((half / 2));
+            double tempCost = Math.pow(2.0, half - prevHeight);
+            prevHeight = half;
+            sumCost += tempCost;
+            --minNumOfMoves;
+        }
+        return sumCost;
+    }
+
+} // end of AStarClass
 
 class MapNode implements Comparable<MapNode> {
     private Point point;
@@ -165,5 +274,15 @@ class MapNode implements Comparable<MapNode> {
     }
     public Double getCost() {
         return cost;
+    }
+}
+
+// cheaty way to perform pass by reference
+class HeuristicNode {
+    public double height;
+    public int count;
+    public HeuristicNode(double height) {
+        this.height = height;
+        this.count = 1;
     }
 }

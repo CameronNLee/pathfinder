@@ -137,7 +137,7 @@ public class DijkstraAI implements AIModule {
     }
 }
 
-class MapNode implements Comparable<MapNode> {
+/*class MapNode implements Comparable<MapNode> {
     private Point point;
     private Double cost;
     public MapNode() {
@@ -166,4 +166,4 @@ class MapNode implements Comparable<MapNode> {
     public Double getCost() {
         return cost;
     }
-}
+}*/
