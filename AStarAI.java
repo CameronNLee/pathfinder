@@ -23,6 +23,12 @@ public class AStarAI implements AIModule {
         Point currentPoint = map.getStartPoint();
         // path.add(new Point(currentPoint));
 
+        // debug to switch between Bizarro and Exp easily; remove in future
+        // useBizarro: if false, use exponential cost. if true, use bizarro cost.
+        // Obviously must still comment and uncomment whatever cost function
+        // we want to use inside TerrainMap.java.
+        boolean useBizarro = false;
+
         /* we create a PQ of MapNode objects that
          * enables us to order the queue by costs from
          * the StartPoint. A MapNode is a pair <Point, Double>,
@@ -44,19 +50,13 @@ public class AStarAI implements AIModule {
          * be useful for later cost relaxation purposes. */
         HashMap<Point, Double> distances = new HashMap<Point, Double>();
         HashMap<Point, Point> paths = new HashMap<Point, Point>(); // format: <current, prev>
+        HeuristicNode hNode = new HeuristicNode(255.0);
 
         // initialize collections to ensure loop correctness
-        open.add(new MapNode(currentPoint, 0.0));
         distances.put(currentPoint, 0.0);
+        open.add(new MapNode(currentPoint, heuristicCost(currentPoint, map.getStartPoint(), hNode, useBizarro)));
         closed.put(currentPoint, true);
         // Boolean pathVisited = new Boolean(false);
-
-        // debug to switch between Bizarro and Exp easily; remove in future
-        // useBizarro: if false, use exponential cost. if true, use bizarro cost.
-        // Obviously must still comment and uncomment whatever cost function
-        // we want to use inside TerrainMap.java.
-        boolean useBizarro = true;
-        HeuristicNode hNode = new HeuristicNode(255.0);
 
         while (!open.isEmpty()) {
             // set current point as the point associated
@@ -105,8 +105,8 @@ public class AStarAI implements AIModule {
                         open.remove(neighborInFrontier); // O(n)
                     }
                     // f(n) + g(n) + h(n)
-                    minCost += heuristicCost(neighbor, map.getEndPoint(), hNode, useBizarro);
                     distances.put(neighbor, minCost);
+                    minCost += heuristicCost(neighbor, map.getEndPoint(), hNode, useBizarro);
                     paths.put(neighbor, currentPoint);
                     open.add(new MapNode(neighbor, minCost)); // adding neighbors to frontier; O(log n)
                 }
@@ -190,7 +190,7 @@ public class AStarAI implements AIModule {
         }
         // case 2: (250,250) to (450,450), perfect diagonal line
         else if ( (xStart == yStart) && (xEnd == yEnd) ) {
-            numOfMoves = xEnd - xStart;
+            numOfMoves = Math.abs(xEnd - xStart);
         }
         // case3: (250,200) to (400,450)
         else {
