@@ -27,7 +27,7 @@ public class AStarAI implements AIModule {
         // useBizarro: if false, use exponential cost. if true, use bizarro cost.
         // Obviously must still comment and uncomment whatever cost function
         // we want to use inside TerrainMap.java.
-        boolean useBizarro = false;
+        // boolean useBizarro = false;
 
         /* we create a PQ of MapNode objects that
          * enables us to order the queue by costs from
@@ -50,13 +50,12 @@ public class AStarAI implements AIModule {
          * be useful for later cost relaxation purposes. */
         HashMap<Point, Double> distances = new HashMap<Point, Double>();
         HashMap<Point, Point> paths = new HashMap<Point, Point>(); // format: <current, prev>
-        HeuristicNode hNode = new HeuristicNode(255.0);
+        // HeuristicNode hNode = new HeuristicNode(255.0);
 
         // initialize collections to ensure loop correctness
         distances.put(currentPoint, 0.0);
-        open.add(new MapNode(currentPoint, heuristicCost(currentPoint, map.getStartPoint(), hNode, useBizarro)));
+        open.add(new MapNode(currentPoint, heuristicCost(currentPoint, map.getStartPoint()/*, hNode, useBizarro*/)));
         closed.put(currentPoint, true);
-        // Boolean pathVisited = new Boolean(false);
 
         while (!open.isEmpty()) {
             // set current point as the point associated
@@ -94,7 +93,7 @@ public class AStarAI implements AIModule {
                 if (tempCost + distances.get(currentPoint) < minCost) {
                     minCost = tempCost + distances.get(currentPoint);
 
-                    /* entering this if statement means that there is
+                    /* entering below if statement means that there is
                      * a better path to the current neighbor, where neighbor
                      * is inside the frontier. Thus, remove the higher cost path
                      * of neighbor inside frontier, remove its entry in distances,
@@ -106,7 +105,7 @@ public class AStarAI implements AIModule {
                     }
                     // f(n) + g(n) + h(n)
                     distances.put(neighbor, minCost);
-                    minCost += heuristicCost(neighbor, map.getEndPoint(), hNode, useBizarro);
+                    minCost += heuristicCost(neighbor, map.getEndPoint()/*, hNode, useBizarro*/);
                     paths.put(neighbor, currentPoint);
                     open.add(new MapNode(neighbor, minCost)); // adding neighbors to frontier; O(log n)
                 }
@@ -118,57 +117,60 @@ public class AStarAI implements AIModule {
             // Note: somehow adding the below if-else
             // INCREASED the costs very slightly AND nodes uncovered by 4000...
             // try commenting and uncommenting it out to compare
-            if (useBizarro) { // update hNode members based on Bizarro scheme
+/*            if (useBizarro) { // update hNode members based on Bizarro scheme
                 hNode.height = Math.floor(hNode.height / 2);
             }
             else { // update hNode members based on Exponent scheme
                 if (hNode.height - hNode.count >= 0) {
-                    hNode.height = hNode.height - hNode.count;
+                    //hNode.height = hNode.height - hNode.count;
                 } else {
                     hNode.height = 0; // exhausted height, cannot go below height = 0 (range is 0 to 255)
                 }
-                ++hNode.count;
-            }
+                //++hNode.count;
+            }*/
         } // end of Dijkstra while loop
-
-        // we're doing a bit of extra work here.
-        // reverse is an O(n^2) operation, while if we just added each new Point to the beginning
-        // of a list, we would accomplish the same result in only O(n) time
-
-        // Are you sure? I looked up the Collections.sort() documentation,
-        // and a lot of sources ended up saying it was O(n) anyway, not O(n^2).
         while ((map.getStartPoint().x != currentPoint.x) || (map.getStartPoint().y != currentPoint.y)) {
             path.add(0, currentPoint);
             currentPoint = paths.get(currentPoint);
         }
-        path.add(0, currentPoint); // don't forget the StartPoint!
+        path.add(0, currentPoint); // re-add start point
 
         // We're done!  Hand it back.
         return path;
     } // end of createPath()
 
 
-    public double heuristicCost(Point currentPoint, Point endpoint, HeuristicNode hNode, boolean useBizarro) {
+    public double heuristicCost(Point currentPoint, Point endpoint/*, HeuristicNode hNode, boolean useBizarro*/) {
         // First: compute min. # of moves from currentPoint to End,
         // assuming that height costs are ignored.
         int minNumOfMoves = getMinNumOfMoves(currentPoint, endpoint);
+        return getLeastCostSumOfExponents(minNumOfMoves);
+
+        //if (!useBizarro) {
+/*            if (minNumOfMoves > 255) {
+                int downwardMoves = minNumOfMoves - 255;
+                return (minNumOfMoves * Math.pow(2.0, -1.0)) + downwardMoves;
+            } else {
+                return minNumOfMoves * Math.pow(2.0, -1.0);
+            }*/
+        // }
 
         // Check the case where there is no longer
         // any downwards movement. If so, then treat
         // the remaining path to goal as a flat path,
         // with each move costing (2^0 = 1) per tile.
-        if (hNode.height == 0) {
+        /*if (hNode.height == 0) {
             return (double)minNumOfMoves;
-        }
+        }*/
 
         // Next, calculate underestimated cost distance
         // from currentPoint to EndPoint, based on assumed
         // best-case height differences (2^some negative #)
-        if (useBizarro) {
+        /*if (useBizarro) {
             return getDistanceToEndBizarro(minNumOfMoves, hNode);
         } else {
             return getDistanceToEndExp(minNumOfMoves, hNode);
-        }
+        }*/
     }
 
     private int getMinNumOfMoves(Point start, Point end) {
@@ -252,12 +254,37 @@ public class AStarAI implements AIModule {
                 sumCost += minNumOfMoves; // tally up remaining move costs (2^0 per move)
                 break;
             }
-            half = Math.floor((half / 2));
+            // half = Math.floor((half / 2));
+            half = half / 2.0;
             double tempCost = Math.pow(2.0, half - prevHeight);
             prevHeight = half;
             sumCost += tempCost;
             --minNumOfMoves;
         }
+        return sumCost;
+    }
+
+    public double getDistanceToEndBizarro(int minNumOfMoves) {
+        double sumCost = 0.0;
+        double prevHeight = 255.0;
+        double half = 255.0;
+        while (minNumOfMoves != 0) {
+            if (half == 0) {
+                sumCost += minNumOfMoves; // tally up remaining move costs (2^0 per move)
+                break;
+            }
+            // half = Math.floor((half / 2));
+            half = half / 2.0;
+            double tempCost = Math.pow(2.0, half - prevHeight);
+            prevHeight = half;
+            sumCost += tempCost;
+            --minNumOfMoves;
+        }
+        return sumCost;
+    }
+    public double getLeastCostSumOfExponents(int minNumOfMoves) {
+        double avgHeightDiff = 255.0 / (double)minNumOfMoves;
+        double sumCost = Math.pow(2.0, -avgHeightDiff) * minNumOfMoves;
         return sumCost;
     }
 
