@@ -146,6 +146,7 @@ public class AStarAI implements AIModule {
         return path;
     } // end of createPath()
 
+    // tester with additional heightDiff input, will remove once code is finalized
     public double heuristicCost(Point currentPoint, Point endpoint, TerrainMap map, double heightDiffToGoal/*, HeuristicNode hNode, boolean useBizarro*/) {
         // First: compute min. # of moves from currentPoint to End,
         // assuming that height costs are ignored.
