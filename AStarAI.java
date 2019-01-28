@@ -54,7 +54,7 @@ public class AStarAI implements AIModule {
 
         // initialize collections to ensure loop correctness
         distances.put(currentPoint, 0.0);
-        open.add(new MapNode(currentPoint, heuristicCost(currentPoint, map.getStartPoint()/*, hNode, useBizarro*/)));
+        open.add(new MapNode(currentPoint, heuristicCost(currentPoint, map.getStartPoint(), map/*, hNode, useBizarro*/)));
         closed.put(currentPoint, true);
 
         while (!open.isEmpty()) {
@@ -105,7 +105,7 @@ public class AStarAI implements AIModule {
                     }
                     // f(n) + g(n) + h(n)
                     distances.put(neighbor, minCost);
-                    minCost += heuristicCost(neighbor, map.getEndPoint()/*, hNode, useBizarro*/);
+                    minCost += heuristicCost(neighbor, map.getEndPoint(), map/*, hNode, useBizarro*/);
                     paths.put(neighbor, currentPoint);
                     open.add(new MapNode(neighbor, minCost)); // adding neighbors to frontier; O(log n)
                 }
@@ -140,11 +140,13 @@ public class AStarAI implements AIModule {
     } // end of createPath()
 
 
-    public double heuristicCost(Point currentPoint, Point endpoint/*, HeuristicNode hNode, boolean useBizarro*/) {
+    public double heuristicCost(Point currentPoint, Point endpoint, TerrainMap map/*, HeuristicNode hNode, boolean useBizarro*/) {
         // First: compute min. # of moves from currentPoint to End,
         // assuming that height costs are ignored.
         int minNumOfMoves = getMinNumOfMoves(currentPoint, endpoint);
-        return getLeastCostSumOfExponents(minNumOfMoves);
+        double heightDiffToGoal = Math.abs(map.getTile(currentPoint) - map.getTile(endpoint));
+        return estimateIdealCost(minNumOfMoves, heightDiffToGoal);
+        // return getLeastCostSumOfExponents(minNumOfMoves);
 
         //if (!useBizarro) {
 /*            if (minNumOfMoves > 255) {
@@ -172,6 +174,56 @@ public class AStarAI implements AIModule {
             return getDistanceToEndExp(minNumOfMoves, hNode);
         }*/
     }
+
+    public double estimateIdealCost(int minSpaces, double heightDiffToGoal) {
+        // Create a list that holds all possible numbers and their quantities
+        // that could sum to s.
+        // Notice that a negative s will only have negative values in its
+        // list and a positive s will only have positive values in its list.
+        // This is because the optimal set of values, for our purposes, will
+        // never make "backwards" progress.
+        ArrayList<Double> heights = new ArrayList<Double>();
+        double runningSum = 0;
+        if (Math.abs(heightDiffToGoal) <= minSpaces) {
+            for (int i = 0; i < minSpaces; i++) {
+                if (Math.abs(runningSum) < Math.abs(heightDiffToGoal)) {
+                    if (heightDiffToGoal < 0) {
+                        heights.add(-1.0);
+                        runningSum -= 1.0;
+                    }
+                    else if (heightDiffToGoal > 0) {
+                        heights.add(1.0);
+                        runningSum += 1.0;
+                    }
+                }
+                else {
+                    heights.add(0.0);
+                }
+            }
+        }
+        else {
+            double optimalHeightChange = 0;
+            for (int i = 0; i < minSpaces; i++) {
+                double avgHeightDiff = heightDiffToGoal/minSpaces;
+                if (runningSum == 0) {
+                    optimalHeightChange = Math.ceil(avgHeightDiff);
+                }
+                else {
+                    optimalHeightChange = Math.ceil((heightDiffToGoal - runningSum)/(minSpaces - i));
+                }
+                heights.add(optimalHeightChange);
+                runningSum += optimalHeightChange;
+            }
+        }
+        double totalCost = 0;
+        for (double elevationDiff : heights) {
+            totalCost += Math.pow(2.0, elevationDiff);
+        }
+        return totalCost;
+    }
+
+
+
 
     private int getMinNumOfMoves(Point start, Point end) {
         int xStart = start.x;
@@ -283,8 +335,13 @@ public class AStarAI implements AIModule {
         return sumCost;
     }
     public double getLeastCostSumOfExponents(int minNumOfMoves) {
-        double avgHeightDiff = 255.0 / (double)minNumOfMoves;
-        double sumCost = Math.pow(2.0, -avgHeightDiff) * minNumOfMoves;
+        double sumCost;
+        double avgHeightDiff = 255.0 / (double) minNumOfMoves;
+        sumCost = Math.pow(2.0, -avgHeightDiff) * minNumOfMoves;
+        if (minNumOfMoves > 255) {
+            int numFlatMoves = minNumOfMoves - 255;
+            sumCost += numFlatMoves;
+        }
         return sumCost;
     }
 
