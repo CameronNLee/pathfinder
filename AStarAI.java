@@ -16,6 +16,13 @@ import java.util.PriorityQueue;
 public class AStarAI implements AIModule {
     /// Creates the path to the goal.
     public List<Point> createPath(final TerrainMap map) {
+        double testBest = heuristicCost(map.getStartPoint(), map.getEndPoint(), map, -255.0);
+        double test1 = heuristicCost(map.getStartPoint(), map.getEndPoint(), map, 0);
+        double test2 = heuristicCost(new Point(251, 251), map.getEndPoint(), map, -255.0);
+        double test3 = heuristicCost(new Point(249, 249), map.getEndPoint(), map, -254.0);
+        double test4 = heuristicCost(new Point(444, 443), map.getEndPoint(), map, 40);
+        double test5 = heuristicCost(new Point(444, 443), map.getEndPoint(), map, 43);
+
         // Holds the resulting path
         final ArrayList<Point> path = new ArrayList<Point>();
 
@@ -54,7 +61,7 @@ public class AStarAI implements AIModule {
 
         // initialize collections to ensure loop correctness
         distances.put(currentPoint, 0.0);
-        open.add(new MapNode(currentPoint, heuristicCost(currentPoint, map.getStartPoint(), map/*, hNode, useBizarro*/)));
+        open.add(new MapNode(currentPoint, heuristicCost(currentPoint, map.getEndPoint(), map/*, hNode, useBizarro*/)));
         closed.put(currentPoint, true);
 
         while (!open.isEmpty()) {
@@ -139,19 +146,27 @@ public class AStarAI implements AIModule {
         return path;
     } // end of createPath()
 
+    public double heuristicCost(Point currentPoint, Point endpoint, TerrainMap map, double heightDiffToGoal/*, HeuristicNode hNode, boolean useBizarro*/) {
+        // First: compute min. # of moves from currentPoint to End,
+        // assuming that height costs are ignored.
+        int minNumOfMoves = getMinNumOfMoves(currentPoint, endpoint);
+        // double heightDiffToGoal = Math.abs(map.getTile(currentPoint) - map.getTile(endpoint));
+        return estimateIdealCost(minNumOfMoves, heightDiffToGoal);
+    }
 
     public double heuristicCost(Point currentPoint, Point endpoint, TerrainMap map/*, HeuristicNode hNode, boolean useBizarro*/) {
         // First: compute min. # of moves from currentPoint to End,
         // assuming that height costs are ignored.
+
         int minNumOfMoves = getMinNumOfMoves(currentPoint, endpoint);
-        double heightDiffToGoal = Math.abs(map.getTile(currentPoint) - map.getTile(endpoint));
+        double heightDiffToGoal = map.getTile(endpoint) - map.getTile(currentPoint);
         return estimateIdealCost(minNumOfMoves, heightDiffToGoal);
         // return getLeastCostSumOfExponents(minNumOfMoves);
 
         //if (!useBizarro) {
 /*            if (minNumOfMoves > 255) {
                 int downwardMoves = minNumOfMoves - 255;
-                return (minNumOfMoves * Math.pow(2.0, -1.0)) + downwardMoves;
+                return (minNumOfMoves * Math.pow(2.0, - 1.0)) + downwardMoves;
             } else {
                 return minNumOfMoves * Math.pow(2.0, -1.0);
             }*/
@@ -203,8 +218,8 @@ public class AStarAI implements AIModule {
         }
         else {
             double optimalHeightChange = 0;
+            double avgHeightDiff = heightDiffToGoal/minSpaces;
             for (int i = 0; i < minSpaces; i++) {
-                double avgHeightDiff = heightDiffToGoal/minSpaces;
                 if (runningSum == 0) {
                     optimalHeightChange = Math.ceil(avgHeightDiff);
                 }
@@ -221,9 +236,6 @@ public class AStarAI implements AIModule {
         }
         return totalCost;
     }
-
-
-
 
     private int getMinNumOfMoves(Point start, Point end) {
         int xStart = start.x;
