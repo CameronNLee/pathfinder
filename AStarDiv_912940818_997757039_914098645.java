@@ -192,7 +192,7 @@ public class AStarDiv_912940818_997757039_914098645 implements AIModule {
         else {
             idealCost = estimateBizarroCost(minNumOfMoves, heightDiffToGoal, map.getTile(currentPoint));
         }
-        return idealCost;
+        return idealCost * 0.9;
     }
 
     /** Given number of moves to goal, height difference to goal, and current height,
