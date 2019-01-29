@@ -48,7 +48,7 @@ public class AStarExp_912940818_997757039_914098645 implements AIModule {
 
         // initialize collections to ensure loop correctness
         distances.put(currentPoint, 0.0);
-        open.add(new MapNode(currentPoint, heuristicCost(currentPoint, map.getEndPoint(), map)));
+        open.add(new MapNode(currentPoint, getHeuristicCost(currentPoint, map.getEndPoint(), map)));
         closed.put(currentPoint, true);
         while (!open.isEmpty()) {
             // set current point as the point associated
@@ -95,7 +95,7 @@ public class AStarExp_912940818_997757039_914098645 implements AIModule {
                     }
                     distances.put(neighbor, minCost);
                     // f(n) + g(n) + h(n)
-                    minCost += heuristicCost(neighbor, map.getEndPoint(), map);
+                    minCost += getHeuristicCost(neighbor, map.getEndPoint(), map);
                     paths.put(neighbor, currentPoint);
                     open.add(new MapNode(neighbor, minCost)); // adding neighbors to frontier; O(log n)
                 }
@@ -119,7 +119,7 @@ public class AStarExp_912940818_997757039_914098645 implements AIModule {
      * @param endpoint: The end point.
      * @return the minimum heuristic cost from currentPoint to endpoint.
      * **/
-    private double heuristicCost(final Point currentPoint, final Point endpoint, TerrainMap map) {
+    private double getHeuristicCost(final Point currentPoint, final Point endpoint, TerrainMap map) {
         // First: compute min. # of moves from currentPoint to End,
         // assuming that height costs are ignored.
         int minNumOfMoves = getMinNumOfMoves(currentPoint, endpoint);
