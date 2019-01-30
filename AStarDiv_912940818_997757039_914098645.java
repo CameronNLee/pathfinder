@@ -132,10 +132,10 @@ public class AStarDiv_912940818_997757039_914098645 implements AIModule {
             return 0.0;
         }
         if (Math.abs(heightDiffToGoal) <= minNumOfMoves) {
-            if (heightDiffToGoal < 0) {
+            if (heightDiffToGoal <= 0) {
                 // we know that there are more moves to make
                 // than the height diff when we enter this if statement.
-                // We also know that height diff is negative.
+                // We also know that height diff is negative or 0.
                 // Thus, when stepping down by 1 to minimize costs,
                 // we always get n/n + n-1/n-1 + n-2/n-2 ...
                 // which is just 1 + 1 + 1 ... + 1 = |heightDiff|.
@@ -150,7 +150,7 @@ public class AStarDiv_912940818_997757039_914098645 implements AIModule {
                 // Second number shows cost of moving from height 1 to height 0 = 1.
                 // This series goes on until remaining moves are all out.
                 if (map.getTile(endpoint) == 0) {
-                    if (remainingMoves % 2 == 1) {
+                    if ((remainingMoves % 2 == 1) || (remainingMoves == minNumOfMoves)) {
                         // special case to prevent wormhole assumption. Example:
                         //  h=4      h=3      h=2      h=1      h=0      h=0
                         //(9,9) to (9,8) to (9,7) to (9,6) to (9,5) to (9,4) goal
